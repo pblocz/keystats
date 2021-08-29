@@ -47,6 +47,7 @@ def write_log(event):
 	if keypresses > KEYPRESS_FLUSH_LIMIT:
 		keypresses = 0
 		opened_file.flush()
+		os.fsync(opened_file)
 
 	opened_file.write(event.to_json() + "\n")
 
