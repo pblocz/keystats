@@ -1,5 +1,6 @@
 $timestamp = Get-Date -Format o | ForEach-Object { $_ -replace ":", "." }
-$homepath = Resolve-Path ~
-mkdir ${homepath}/keyfreqs/
+$homepath = Resolve-Path ~/keyfreq
+
+mkdir ${homepath}/data
 cd $homepath
-python "${homepath}/keystats-win.py" ${homepath}/keyfreqs/keyfreq-${timestamp}.json
+python "${homepath}/keystats-win.py" ${homepath}/data/keyfreq-${timestamp}.json
