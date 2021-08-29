@@ -2,6 +2,9 @@ import os
 import keyboard
 import sys
 
+keypresses = 0
+KEYPRESS_FLUSH_LIMIT = 100
+
 # Initialization
 def main():
 	global log_file, opened_file
@@ -38,6 +41,12 @@ def OnKeyPress(event):
 # Write stats to file
 def write_log(event):
 	global opened_file
+	global keypresses
+
+	keypresses += 1
+	if keypresses > KEYPRESS_FLUSH_LIMIT:
+		keypresses = 0
+		opened_file.flush()
 
 	opened_file.write(event.to_json() + "\n")
 
