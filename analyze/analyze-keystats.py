@@ -24,11 +24,12 @@ whitespace = ["SPACE", "BACKSPACE", "DELETE", "ENTER"]
 # Read keypresses extend the columns
 
 keypresses = (
-    spark.read.json("./keypress-freq-output.json")
+    # spark.read.json("./keypress-freq-output.json")
+    spark.read.json("/mnt/c/Users/Pablo/keyfreq/data/*.json")
         .withColumn("id", F.monotonically_increasing_id())
         .withColumn("time", (F.from_unixtime(F.lit(0)) + (F.expr("interval 1 second") * F.col("time"))).cast("timestamp"))
         .withColumn("normalized_name", F.upper(F.col("name")))
-        .filter(F.col("_corrupt_record").isNull())
+        # .filter(F.col("_corrupt_record").isNull())
         .withColumn("type",
             F.when(F.col("normalized_name").isin(letters), F.lit("LETTER"))
              .when(F.col("normalized_name").isin(numbers), F.lit("NUMBER"))
@@ -50,6 +51,10 @@ keypresses.cache().count()
 # Raw keypress count
 
 keypresses_count = keypresses.groupby("normalized_name", "type").count()
+keypresses_count = keypresses_count.cache()
+
+## Write keypresses count to csv
+keypresses_count.sort("count").toPandas().to_csv("./keypresses_count.csv")
 
 ## Show keypresses that are not letters
 keypresses_count.sort("count").filter(~F.col("type").isin(["LETTER"])).toPandas()
@@ -74,7 +79,13 @@ bigrams = (
         .select("time", "following_key_time", "time_delta", "bigram")
 )
 
-bigrams.groupby("bigram").count().sort("count").toPandas()
+bigrams_count = bigrams.groupby("bigram").count().cache()
+
+## Write keypresses count to csv
+bigrams_count.sort("count").toPandas().to_csv("./bigrams_count.csv")
+
+## Show bigrams
+bigrams_count.sort("count").toPandas()
 
 #%%
 
