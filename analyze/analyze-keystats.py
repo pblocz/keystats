@@ -3,6 +3,7 @@
 from pyspark.context import SparkContext
 from pyspark.sql import SparkSession
 from pyspark.sql import functions as F
+from pyspark.sql.dataframe import DataFrame
 
 
 sc = SparkContext('local', 'test')
@@ -64,28 +65,39 @@ keypresses_count.sort("count").filter(~F.col("type").isin(["LETTER"])).toPandas(
 # Calcute bigrams from keypresses that are less less than followup_secs separated between them
 
 from pyspark.sql.window import Window
+from pyspark.sql import DataFrame
 
 w = Window().partitionBy("input_file").orderBy("time")
 followup_secs = 1.0
 
-bigrams = (
-    keypresses
+def bigrams_trf(df: DataFrame) -> DataFrame:
+    return (
+        df 
         .withColumn("following_key_time", F.lead("time").over(w))
         .withColumn("following_name", F.lead("normalized_name").over(w))
+        .withColumn("following_type", F.lead("type").over(w))
         .withColumn("time_delta", (F.col("following_key_time").cast("double") - F.col("time").cast("double")))
         .withColumn("is_followup", (F.col("time_delta") < followup_secs))
         .filter("is_followup")
         .withColumn("bigram", F.array(F.col("normalized_name"), F.col("following_name")))
-        .select("time", "following_key_time", "time_delta", "bigram")
-)
+        .select("time", "following_key_time", "time_delta", "bigram", "type", "following_type")
+    )
+    
 
-bigrams_count = bigrams.groupby("bigram").count().cache()
+bigrams = keypresses.transform(bigrams_trf)
+# Filter shift from bigrams due to it being picked up as part of modified keys or caps
+bigrams_cleaned = keypresses.filter(F.col("normalized_name") != "SHIFT").transform(bigrams_trf)
+
+bigrams_count = bigrams.groupby("bigram", "type", "following_type").count().cache()
+bigrams_cleaned_count = bigrams_cleaned.groupby("bigram", "type", "following_type").count().cache()
 
 ## Write keypresses count to csv
 bigrams_count.sort("count").toPandas().to_csv("./bigrams_count.csv")
+bigrams_cleaned_count.sort("count").toPandas().to_csv("./bigrams_cleaned_count.csv")
 
 ## Show bigrams
 bigrams_count.sort("count").toPandas()
+bigrams_cleaned_count.sort("count").toPandas()
 
 #%%
 
