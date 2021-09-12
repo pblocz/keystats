@@ -1,9 +1,9 @@
 #%%
 
 matrix = [
-    "qwertyuiop",
-    "asdfghjkl;",
-    "zxcvbnm,./"
+    "1qwertyuiop4",
+    "2asdfghjkl;5",
+    "3zxcvbnm,./6"
 ]
 
 pairs = []
@@ -44,7 +44,7 @@ df["edges"] = df.bigram.apply(lambda b: tuple(e.lower() for e in json.loads(b.re
 reverseddf = df.assign(edges=df["edges"].apply(lambda e: tuple(reversed(e))))
 
 dupdf = pd.concat([df, reverseddf])
-dupdf = dupdf.groupby("edges").sum()
+dupdf = dupdf.groupby("edges").sum().reset_index()
 
 # %%
 
@@ -52,7 +52,8 @@ def add_edge_count(row):
     global G
     try:
         G.edges[row["edges"]]["weight"] = row["count"]
-    except KeyError as e: pass
+    except KeyError as e:
+        pass
 
 dupdf.apply(add_edge_count, axis=1)
 
@@ -99,3 +100,30 @@ nx.draw(G, pos, edge_color=colors, with_labels=True, font_weight='bold', node_si
 nx.draw_networkx_edge_labels(G,pos,edge_labels=labels, label_pos=0.4)
 
 #%%
+import re
+
+keymap_path = "/home/pblocz/projects/zmk-config-reviung/config/reviung41.keymap"
+
+with open(keymap_path) as f:
+    keymap = "".join([l.strip() for l in f.readlines()])
+
+combos = re.findall(r'combos\s*\{.*\};\s*behaviors', keymap, re.MULTILINE)[0]
+positions = [tuple(e.split()) for e in re.findall('key-positions\s*=\s*<(.*?)>;', combos)]
+linear_matrix = list(it.chain.from_iterable(matrix))
+matrix_pos = [(linear_matrix[int(p1)], linear_matrix[int(p2)]) for p1, p2 in positions]
+
+bindings = [e for e in re.findall('bindings\s*=\s*<(.*?)>;', combos)]
+
+combos_edges = [ list(pos) + [{"label": b}] for pos, b in zip(matrix_pos, bindings)]
+
+# %%
+
+plt.figure(figsize=(20,15))
+G2 = nx.Graph()
+G2.add_nodes_from(it.chain.from_iterable(matrix))
+G2.add_edges_from(combos_edges)
+
+combo_labels = nx.get_edge_attributes(G2,'label')
+
+nx.draw(G2, pos, with_labels=True, font_weight='bold', node_size=1000, connectionstyle="arc3,rad=0.7")
+nx.draw_networkx_edge_labels(G2,pos,edge_labels=combo_labels, label_pos=0.5)
