@@ -1,2 +1,4 @@
 pyspark
 pandas
+networkx
+matplotlib
