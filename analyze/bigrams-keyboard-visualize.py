@@ -119,11 +119,39 @@ combos_edges = [ list(pos) + [{"label": b}] for pos, b in zip(matrix_pos, bindin
 # %%
 
 plt.figure(figsize=(20,15))
-G2 = nx.Graph()
+G2 = nx.DiGraph()
 G2.add_nodes_from(it.chain.from_iterable(matrix))
 G2.add_edges_from(combos_edges)
 
 combo_labels = nx.get_edge_attributes(G2,'label')
 
-nx.draw(G2, pos, with_labels=True, font_weight='bold', node_size=1000, connectionstyle="arc3,rad=0.7")
+nx.draw(G2, pos, with_labels=True, font_weight='bold', node_size=1000,  connectionstyle="arc3,rad=0.4")
 nx.draw_networkx_edge_labels(G2,pos,edge_labels=combo_labels, label_pos=0.5)
+
+# %%
+
+import graphviz as gv
+
+def networkx_to_graphviz(g):
+    """Convert `networkx` graph `g` to `graphviz.Digraph`.
+
+    @type g: `networkx.Graph` or `networkx.DiGraph`
+    @rtype: `graphviz.Digraph`
+    """
+    if g.is_directed():
+        h = gv.Digraph(
+            engine="neato",
+            graph_attr=dict(splines="true", size="11"),
+            edge_attr=dict(fontsize="10", arrowhead="none"),
+            node_attr=dict(shape="square", pin="true")
+            )
+    else:
+        h = gv.Graph()
+    for u, d in g.nodes(data=True):
+        h.node(str(u), label=str(u), pos=f"{','.join(str(2*e) for e in pos[str(u)])}!")
+    for u, v, d in g.edges(data=True):
+        h.edge(str(u), str(v), label=d['label'], )
+    return h
+
+
+networkx_to_graphviz(G2)
