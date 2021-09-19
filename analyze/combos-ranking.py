@@ -57,10 +57,10 @@ def hrdist(a: tuple):
 #**
 
 from dataclasses import dataclass, field
-move_effort_home = [4,3,2,1,1,2,3,4,]
+move_effort_home = [6,4,2,1,1,2,4,6,]
 move_effort_dict = dict(zip(home_keys, move_effort_home))
 
-press_effort_home = [3,2,0,0,0,0,2,3,]
+press_effort_home = [5,3,0,0,0,0,3,5,]
 press_effort_dict = dict(zip(home_keys, press_effort_home))
 
 hand = {
